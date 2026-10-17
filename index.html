@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>جبلة الطبية | المنصة السحابية الرسمية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { font-family: 'Cairo', sans-serif; background: #e2e8f0; user-select: none; -webkit-tap-highlight-color: transparent; }
+.app-box { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f8fafc; display: flex; flex-direction: column; position: relative; }
+.grad { background: linear-gradient(135deg, #0f766e 0%, #0369a1 100%); }
+.admin-grad { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+</style>
+</head>
+<body>
+<div class="app-box shadow-2xl">
+  <!-- الهيدر العلوي وشعار الإدارة المحمي -->
+  <header id="mainHeader" class="grad text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+    <div onclick="secretAdminTrigger()" class="flex items-center gap-2.5 cursor-pointer">
+      <div id="appLogoBox" class="w-10 h-10 rounded-xl bg-white text-teal-700 flex items-center justify-center shadow overflow-hidden">
+        <i id="appLogoIcon" class="fa-solid fa-staff-snake text-xl"></i>
+        <img id="appLogoImg" src="" class="w-full h-full object-cover hidden" alt="Logo">
+      </div>
+      <div>
+        <h1 class="font-extrabold text-base leading-tight flex items-center gap-1.5">
+          جبلة الطبية
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="متصل أونلاين"></span>
+        </h1>
+        <p class="text-[10px] text-teal-100">منصة الرعاية الصحية المشتركة في جبلة</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="syncCloud(true)" class="bg-white/15 hover:bg-white/25 p-2 rounded-lg text-xs" title="تحديث البيانات"><i id="syncIcon" class="fa-solid fa-rotate"></i></button>
+      <button id="logoutBtn" onclick="logout()" class="hidden bg-red-500/80 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-bold">تسجيل خروج</button>
+    </div>
+  </header>
+
+  <!-- نافذة الدخول السري للإدارة -->
+  <div id="adminModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl border border-slate-200">
+      <h3 class="font-extrabold text-sm text-slate-800 mb-1"><i class="fa-solid fa-shield-halved text-teal-600 ml-1"></i> الإدارة السرية</h3>
+      <p class="text-[11px] text-slate-500 mb-3">أدخل رمز الإدارة لتغيير الشعار وتوثيق الحسابات</p>
+      <input type="password" id="adminPassInput" placeholder="كلمة المرور..." class="w-full p-2.5 rounded-xl border text-xs mb-3 focus:outline-none focus:border-teal-600">
+      <div class="flex gap-2">
+        <button onclick="verifyAdminPass()" class="flex-1 bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl">دخول</button>
+        <button onclick="document.getElementById('adminModal').classList.add('hidden')" class="px-4 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- شاشة المصادقة (تسجيل الدخول / إنشاء حساب جديد) -->
+  <main id="authScreen" class="flex-1 p-5 flex flex-col justify-center bg-white">
+    <div class="text-center mb-4">
+      <h2 id="authTitle" class="text-lg font-extrabold text-slate-800">إنشاء حساب نظامي جديد</h2>
+      <p id="authSub" class="text-xs text-slate-500">سجل حسابك بكلمة مرور لتبقى مسجلاً دائماً</p>
+    </div>
+
+    <!-- تبديل بين تسجيل دخول وإنشاء حساب -->
+    <div class="flex bg-slate-100 p-1 rounded-xl mb-4 text-xs font-bold">
+      <button type="button" onclick="switchAuthMode('register')" id="modeReg" class="flex-1 py-2 rounded-lg bg-white text-teal-700 shadow-sm">حساب جديد</button>
+      <button type="button" onclick="switchAuthMode('login')" id="modeLog" class="flex-1 py-2 text-slate-500">تسجيل دخول</button>
+    </div>
+
+    <div id="roleSelector" class="grid grid-cols-4 gap-2 mb-4">
+      <button type="button" onclick="setRole('patient')" id="btn-patient" class="r-btn border-2 border-teal-600 bg-teal-50 text-teal-700 p-2 rounded-xl flex flex-col items-center gap-1 transition"><i class="fa-solid fa-user text-sm"></i><span class="text-[10px] font-bold">مراجع</span></button>
+      <button type="button" onclick="setRole('doctor')" id="btn-doctor" class="r-btn border-2 border-slate-200 text-slate-600 p-2 rounded-xl flex flex-col items-center gap-1 transition"><i class="fa-solid fa-user-doctor text-sm"></i><span class="text-[10px] font-bold">طبيب</span></button>
+      <button type="button" onclick="setRole('nurse')" id="btn-nurse" class="r-btn border-2 border-slate-200 text-slate-600 p-2 rounded-xl flex flex-col items-center gap-1 transition"><i class="fa-solid fa-user-nurse text-sm"></i><span class="text-[10px] font-bold">ممرض</span></button>
+      <button type="button" onclick="setRole('hospital')" id="btn-hospital" class="r-btn border-2 border-slate-200 text-slate-600 p-2 rounded-xl flex flex-col items-center gap-1 transition"><i class="fa-solid fa-hospital text-sm"></i><span class="text-[10px] font-bold">مشفى</span></button>
+    </div>
+
+    <form onsubmit="handleAuth(event)" class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+      <div id="fieldNameBox">
+        <label id="lblName" class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل</label>
+        <input type="text" id="inName" placeholder="أدخل الاسم..." class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
+        <input type="email" id="inEmail" required placeholder="name@example.com" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور (لتثبيت الدخول)</label>
+        <input type="password" id="inPass" required placeholder="••••••••" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600">
+      </div>
+      <div id="fieldPhoneBox">
+        <label class="block text-xs font-bold text-slate-700 mb-1">رقم الهاتف (واتساب)</label>
+        <input type="tel" id="inPhone" placeholder="09xxxxxxxx" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600">
+      </div>
+      <div id="boxSpec" class="hidden">
+        <label id="lblSpec" class="block text-xs font-bold text-slate-700 mb-1">الاختصاص</label>
+        <select id="inSpec" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600"></select>
+      </div>
+      <div id="boxWork" class="hidden">
+        <label id="lblWork" class="block text-xs font-bold text-slate-700 mb-1">العنوان / مكان العمل</label>
+        <input type="text" id="inWork" placeholder="مثال: جبلة - العمارة" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-teal-600">
+      </div>
+      <div id="boxProof" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl space-y-2">
+        <label class="block text-[11px] font-extrabold text-amber-900"><i class="fa-solid fa-id-card ml-1"></i> إرسال الثبوتيات للتوثيق:</label>
+        <input type="text" id="inLicense" placeholder="رقم النقابة أو الترخيص..." class="w-full p-2 rounded-lg border border-amber-300 text-xs bg-white">
+        <div>
+          <label class="block text-[10px] text-amber-800 mb-1">صورة الترخيص أو البطاقة المهنية:</label>
+          <input type="file" id="inProofImg" accept="image/*" class="w-full text-[10px] text-slate-600">
+        </div>
+      </div>
+      <button type="submit" id="authSubmitBtn" class="w-full grad text-white font-bold py-3 rounded-xl text-xs shadow-md">إنشاء الحساب والدخول الدائم</button>
+    </form>
+  </main>
+
+  <!-- شاشة التطبيق الرئيسية -->
+  <main id="appScreen" class="hidden flex-1 flex flex-col pb-10">
+    <div id="userCard" class="bg-slate-800 text-white p-3.5 mx-4 mt-3 rounded-2xl flex justify-between items-center shadow">
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span id="uBadge" class="text-[10px] bg-teal-500 px-2 py-0.5 rounded-full font-bold"></span>
+          <span id="uVerifyBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold"></span>
+        </div>
+        <h3 id="uName" class="font-bold text-sm mt-1"></h3>
+        <p id="uInfo" class="text-[11px] text-slate-300"></p>
+      </div>
+      <span class="text-xs text-teal-400 font-bold"><i class="fa-solid fa-location-dot"></i> في جبلة</span>
+    </div>
+
+    <div id="pendingAlert" class="hidden mx-4 mt-3 bg-amber-50 border border-amber-300 text-amber-900 p-3 rounded-xl text-xs">
+      <i class="fa-solid fa-clock text-amber-600 ml-1"></i> <b>حسابك قيد المراجعة:</b> تم إرسال ثبوتياتك وسيتم توثيقك قريباً من الإدارة.
+    </div>
+
+    <!-- التبويبات -->
+    <div class="flex bg-white border-b mt-3 px-2 text-[11px] font-bold text-slate-500 text-center overflow-x-auto shadow-sm">
+      <button onclick="tab('consult')" id="t-consult" class="flex-1 py-3 border-b-2 border-teal-600 text-teal-600 whitespace-nowrap px-2">بوستات الاستشارات</button>
+      <button onclick="tab('nurse')" id="t-nurse" class="flex-1 py-3 border-b-2 border-transparent whitespace-nowrap px-2">التمريض</button>
+      <button onclick="tab('hosp')" id="t-hosp" class="flex-1 py-3 border-b-2 border-transparent whitespace-nowrap px-2">المشافي</button>
+      <button onclick="tab('dir')" id="t-dir" class="flex-1 py-3 border-b-2 border-transparent whitespace-nowrap px-2">الكادر الموثق</button>
+      <button onclick="tab('admin')" id="t-admin" class="hidden flex-1 py-3 border-b-2 border-transparent text-red-600 whitespace-nowrap px-2"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة</button>
+    </div>
+
+    <!-- 1. الاستشارات -->
+    <div id="sec-consult" class="p-4 space-y-3.5 flex-1">
+      <div id="fConsult" class="bg-white border border-teal-200 p-3.5 rounded-2xl shadow-sm">
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="font-extrabold text-xs text-teal-900"><i class="fa-solid fa-pen-to-square ml-1 text-teal-600"></i> نشر استشارة طبية جديدة</h4>
+          <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-user-secret ml-1"></i> بدون اسمك</span>
+        </div>
+        <select id="cSpec" class="w-full p-2 rounded-xl border border-slate-200 text-xs mb-2 bg-slate-50 font-semibold text-slate-700">
+          <option>جراحة عامة وتنظيرية</option><option>أمراض داخلية وقلبية</option><option>طب أطفال وحديثي الولادة</option><option>نسائية وتوليد</option><option>جراحة عظمية ومفاصل</option><option>أشعة وتشخيص شعاعي</option><option>أذنية وعينية</option><option>جلدية وتجميل</option><option>بولية وتركيب قثاطر</option><option>استشارة عامة / طوارئ</option>
+        </select>
+        <textarea id="cText" rows="3" placeholder="اكتب سؤالك الطبي أو الأعراض هنا..." class="w-full p-2.5 rounded-xl border border-slate-200 text-xs mb-2 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600"></textarea>
+        <button onclick="addConsult()" class="w-full grad text-white text-xs font-bold py-2.5 rounded-xl shadow">نشر البوست الطبي أونلاين</button>
+      </div>
+      <div id="listConsult" class="space-y-3.5"></div>
+    </div>
+
+    <!-- 2. التمريض -->
+    <div id="sec-nurse" class="hidden p-4 space-y-3 flex-1">
+      <div id="fNurse" class="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl">
+        <h4 class="font-bold text-xs text-sky-900 mb-2"><i class="fa-solid fa-syringe ml-1"></i> طلب خدمة تمريضية في جبلة</h4>
+        <select id="nType" class="w-full p-2 rounded-xl border border-sky-200 text-xs mb-2 bg-white">
+          <option>تركيب سيروم وفتح وريد وإعطاء حقن</option>
+          <option>تغيير ضماد جراحي وعناية بالجروح والحروق</option>
+          <option>تصوير أشعة / تحضير واستشارة شعاعية</option>
+          <option>تركيب وتبديل قثطرة بولية أو أنبوب أنفي معدي</option>
+          <option>مراقبة علامات حيوية (ضغط، سكر، أكسجة، تخطيط)</option>
+          <option>جلسات رذاذ وعلاج تنفسي منزلي</option>
+          <option>علاج فيزيائي وإعادة تأهيل حركي</option>
+          <option>سحب عينات دم مخبرية في المنزل</option>
+          <option>مرافقة مريض / رعاية مسنين وعناية مشددة</option>
+        </select>
+        <input id="nAddr" placeholder="مثال: جبلة - العمارة" class="w-full p-2.5 rounded-xl border border-sky-200 text-xs mb-2 bg-white focus:outline-none">
+        <button onclick="addNurse()" class="w-full bg-sky-600 text-white text-xs font-bold py-2.5 rounded-xl shadow">إرسال الطلب أونلاين</button>
+      </div>
+      <div id="listNurse" class="space-y-3"></div>
+    </div>
+
+    <!-- 3. المشافي -->
+    <div id="sec-hosp" class="hidden p-4 space-y-3 flex-1">
+      <div id="fHosp" class="hidden bg-indigo-50 border border-indigo-200 p-3.5 rounded-2xl">
+        <h4 class="font-bold text-xs text-indigo-900 mb-2"><i class="fa-solid fa-bullhorn ml-1"></i> تحديث حالة المناوبة في المشفى</h4>
+        <input id="hStatus" placeholder="مثال: قسم الإسعاف والأشعة متاح 24 ساعة..." class="w-full p-2.5 rounded-xl border border-indigo-200 text-xs mb-2 bg-white">
+        <button onclick="upHosp()" class="w-full bg-indigo-600 text-white text-xs font-bold py-2 rounded-xl shadow">نشر التحديث أونلاين</button>
+      </div>
+      <div id="listHosp" class="space-y-3"></div>
+    </div>
+
+    <!-- 4. الدليل -->
+    <div id="sec-dir" class="hidden p-4 space-y-2.5 flex-1">
+      <div id="listDir" class="space-y-2.5"></div>
+    </div>
+
+    <!-- 5. الإدارة الشاملة -->
+    <div id="sec-admin" class="hidden p-4 space-y-4 flex-1">
+      <div class="bg-slate-900 text-white p-4 rounded-2xl shadow space-y-3">
+        <h3 class="font-extrabold text-sm text-teal-400"><i class="fa-solid fa-user-shield ml-1"></i> التحكم بشعار التطبيق والتوثيق</h3>
+        <p class="text-[11px] text-slate-300">هنا يمكنك تغيير الشعار العلوي للتطبيق، وتوثيق حسابات الكادر والمشافي.</p>
+        <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 space-y-2">
+          <label class="block text-[11px] font-bold text-teal-300">رفع الشعار الجديد العلوي:</label>
+          <input type="file" id="adminLogoFile" accept="image/*" class="w-full text-[10px] text-slate-300">
+          <button onclick="updateAppLogo()" class="w-full bg-teal-600 text-white text-xs font-bold py-2 rounded-lg shadow">تحديث الشعار للجميع أونلاين</button>
+        </div>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-xs text-amber-700 mb-2"><i class="fa-solid fa-hourglass-half ml-1"></i> طلبات توثيق الحسابات المعلقة:</h4>
+        <div id="adminPendingList" class="space-y-2.5"></div>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-xs text-teal-800 mb-2"><i class="fa-solid fa-circle-check ml-1"></i> الحسابات الموثقة حالياً:</h4>
+        <div id="adminApprovedList" class="space-y-2.5"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const ADMIN_SECRET = "haidara2026";
+let tapCount = 0, tapTimer = null;
+let role = 'patient', authMode = 'register', user = null, tempProofBase64 = "", tempLogoBase64 = "";
+
+const specs = {
+  doctor: ["جراحة عامة وتنظيرية", "أمراض داخلية عامة", "أمراض القلب والأوعية الدموية", "طب أطفال وحديثي الولادة", "نسائية وتوليد", "جراحة عظمية ومفاصل وكسور", "تشخيص شعاعي وأشعة وإيكو", "طب طوارئ وعناية مشددة", "تخدير وإنعاش", "جراحة بولية وذكورة", "أمراض أذنية وحنجرة", "أمراض عينية وجراحتها", "أمراض جلدية وتجميل", "أمراض عصبية ودماغية", "أمراض صدرية وتنفسية", "أمراض هضمية وكبد", "غدد صم وسكري", "طب أسنان وجراحة فكين"],
+  nurse: ["تمريض عام ورعاية صحية", "تمريض إسعاف وطوارئ", "تمريض عناية مشددة وإنعاش (ICU)", "فني أشعة وتصوير طبي", "مساعد جراح وتمريض غرف عمليات", "فني تخدير وإنعاش", "تمريض عناية بالجروح وضماد جراحي وحروق", "تمريض أطفال وحواضن وحديثي ولادة", "قبالة قانونية ورعاية حوامل", "فني مخبر وتحاليل طبية وسحب دم", "فني علاج فيزيائي وإعادة تأهيل", "تمريض كلية صناعية وغسيل كلى", "تمريض قثطرة قلبية وأوعية", "تمريض صحة مجتمعية ورعاية مسنين منزلية"],
+  hospital: ["مشفى جراحي وتخصصي شامل", "مشفى تخصصي (طوارئ وعمليات 24 ساعة)", "مشفى نسائية وأطفال وحواضن", "مركز طبي وعيادات شاملة", "مركز تصوير شعاعي وطبقي محوري ومخابر"]
+};
+
+let db = JSON.parse(localStorage.getItem('jb_cloud_master') || '{"accounts":[],"consults":[],"nursing":[],"logo":""}');
+
+async function syncCloud(manual = false) {
+  const icon = document.getElementById('syncIcon');
+  if(icon) icon.classList.add('fa-spin');
+  try {
+    const res = await fetch("https://jsonblob.com/api/jsonBlob/1344845000000000000", {cache: "no-store"});
+    const data = await res.json();
+    if(data && data.accounts) { db = data; localStorage.setItem('jb_cloud_master', JSON.stringify(db)); }
+  } catch(e) {}
+  if(icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
+  applyLogo();
+  checkPersistentLogin();
+}
+
+async function pushCloud() {
+  localStorage.setItem('jb_cloud_master', JSON.stringify(db));
+  try {
+    await fetch("https://jsonblob.com/api/jsonBlob/1344845000000000000", {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(db)
+    });
+  } catch(e) {}
+}
+
+function applyLogo() {
+  const imgEl = document.getElementById('appLogoImg');
+  const iconEl = document.getElementById('appLogoIcon');
+  if(db.logo) {
+    imgEl.src = db.logo;
+    imgEl.classList.remove('hidden');
+    iconEl.classList.add('hidden');
+  } else {
+    imgEl.classList.add('hidden');
+    iconEl.classList.remove('hidden');
+  }
+}
+
+// التحقق من وجود جلسة مسجلة مسبقاً (دخول دائم)
+function checkPersistentLogin() {
+  const savedUserId = localStorage.getItem('jb_logged_user_id');
+  if(savedUserId) {
+    if(savedUserId === 'admin') {
+      enterAsAdmin();
+      return;
+    }
+    const found = db.accounts.find(a => a.id == savedUserId);
+    if(found) {
+      user = found;
+      openDashboard();
+    }
+  }
+}
+
+function switchAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('modeReg').className = mode === 'register' ? "flex-1 py-2 rounded-lg bg-white text-teal-700 shadow-sm" : "flex-1 py-2 text-slate-500";
+  document.getElementById('modeLog').className = mode === 'login' ? "flex-1 py-2 rounded-lg bg-white text-teal-700 shadow-sm" : "flex-1 py-2 text-slate-500";
+  document.getElementById('authTitle').innerText = mode === 'register' ? 'إنشاء حساب نظامي جديد' : 'تسجيل الدخول إلى حسابك';
+  document.getElementById('authSub').innerText = mode === 'register' ? 'سجل حسابك بكلمة مرور لتبقى مسجلاً دائماً' : 'أدخل بريدك وكلمة المرور للدخول فورا';
+  document.getElementById('authSubmitBtn').innerText = mode === 'register' ? 'إنشاء الحساب والدخول الدائم' : 'تسجيل الدخول';
+  document.getElementById('roleSelector').style.display = mode === 'register' ? 'grid' : 'none';
+  document.getElementById('fieldNameBox').style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('fieldPhoneBox').style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('boxSpec').style.display = (mode === 'register' && role !== 'patient') ? 'block' : 'none';
+  document.getElementById('boxWork').style.display = (mode === 'register' && role !== 'patient') ? 'block' : 'none';
+  document.getElementById('boxProof').style.display = (mode === 'register' && role !== 'patient') ? 'block' : 'none';
+}
+
+document.getElementById('adminLogoFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxW = 120;
+      const scale = maxW / img.width;
+      canvas.width = maxW; canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      tempLogoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function updateAppLogo() {
+  if(!tempLogoBase64) return alert("يرجى اختيار صورة الشعار أولاً");
+  db.logo = tempLogoBase64;
+  pushCloud();
+  applyLogo();
+  alert("تم تحديث الشعار العلوي بنجاح لجميع المستخدمين أونلاين!");
+}
+
+document.getElementById('inProofImg').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxW = 400;
+      const scale = maxW / img.width;
+      canvas.width = maxW; canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      tempProofBase64 = canvas.toDataURL('image/jpeg', 0.6);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function secretAdminTrigger() {
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => tapCount = 0, 1800);
+  if(tapCount >= 5) { tapCount = 0; document.getElementById('adminModal').classList.remove('hidden'); }
+}
+
+function verifyAdminPass() {
+  const p = document.getElementById('adminPassInput').value.trim();
+  if(p === ADMIN_SECRET) {
+    document.getElementById('adminModal').classList.add('hidden');
+    document.getElementById('adminPassInput').value = '';
+    enterAsAdmin();
+  } else { alert("كلمة المرور غير صحيحة!"); }
+}
+
+function enterAsAdmin() {
+  user = { id: 'admin', name: 'المدير العام', email: 'admin@jableh.med', role: 'admin', spec: 'الإدارة', work: 'في جبلة', verified: true };
+  localStorage.setItem('jb_logged_user_id', 'admin');
+  openDashboard(); tab('admin');
+}
+
+function setRole(r) {
+  role = r;
+  ['patient','doctor','nurse','hospital'].forEach(k => {
+    document.getElementById('btn-'+k).className = k===r ? "r-btn border-2 border-teal-600 bg-teal-50 text-teal-700 p-2 rounded-xl flex flex-col items-center gap-1 transition" : "r-btn border-2 border-slate-200 text-slate-600 p-2 rounded-xl flex flex-col items-center gap-1 transition";
+  });
+  const bs = document.getElementById('boxSpec'), bw = document.getElementById('boxWork'), bp = document.getElementById('boxProof');
+  if(r === 'patient') {
+    bs.classList.add('hidden'); bw.classList.add('hidden'); bp.classList.add('hidden');
+    document.getElementById('lblName').innerText = 'الاسم الكامل (لن يظهر عند نشر استشارة)';
+  } else {
+    bs.classList.remove('hidden'); bw.classList.remove('hidden'); bp.classList.remove('hidden');
+    document.getElementById('inSpec').innerHTML = specs[r].map(s => `<option value="${s}">${s}</option>`).join('');
+    document.getElementById('lblName').innerText = r==='hospital' ? 'اسم المشفى' : (r==='doctor' ? 'اسم الطبيب' : 'اسم الممرض / الفني');
+    document.getElementById('lblSpec').innerText = r==='hospital' ? 'تصنيف المشفى' : (r==='doctor' ? 'الاختصاص الطبي' : 'الاختصاص التمريضي');
+    document.getElementById('lblWork').innerText = 'العنوان / مكان العمل';
+    document.getElementById('inWork').placeholder = "مثال: جبلة - العمارة";
+  }
+}
+
+function handleAuth(e) {
+  e.preventDefault();
+  const email = document.getElementById('inEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('inPass').value.trim();
+
+  // دخول كمشرف عبر البريد أو كلمة السر
+  if((email === 'admin@jableh.med' || email === 'admin') && pass === ADMIN_SECRET) {
+    enterAsAdmin();
+    return;
+  }
+
+  if(authMode === 'login') {
+    const found = db.accounts.find(a => a.email === email && a.pass === pass);
+    if(found) {
+      user = found;
+      localStorage.setItem('jb_logged_user_id', user.id);
+      openDashboard();
+    } else {
+      alert("البريد الإلكتروني أو كلمة المرور غير صحيحة!");
+    }
+  } else {
+    const name = document.getElementById('inName').value.trim();
+    const phone = document.getElementById('inPhone').value.trim();
+    const spec = role === 'patient' ? 'مراجع' : document.getElementById('inSpec').value;
+    const work = role === 'patient' ? 'في جبلة' : (document.getElementById('inWork').value.trim() || 'جبلة - العمارة');
+    const license = document.getElementById('inLicense').value.trim();
+
+    if(db.accounts.some(a => a.email === email)) {
+      return alert("هذا البريد الإلكتروني مسجل مسبقاً! يرجى تسجيل الدخول.");
+    }
+
+    user = {
+      id: Date.now(),
+      name, email, pass, phone, role, spec, work,
+      license: license || (role==='patient'?'مراجع':'مرفق ثبوتيات'),
+      proofImg: tempProofBase64 || "",
+      verified: role === 'patient',
+      status: "الطوارئ متاحة"
+    };
+    db.accounts.unshift(user);
+    pushCloud();
+    localStorage.setItem('jb_logged_user_id', user.id);
+    openDashboard();
+  }
+}
+
+function openDashboard() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  const isAdm = user.role === 'admin';
+  document.getElementById('mainHeader').className = (isAdm ? "admin-grad" : "grad") + " text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md";
+  document.getElementById('t-admin').classList.toggle('hidden', !isAdm);
+  document.getElementById('uBadge').innerText = {patient:'مراجع', doctor:'طبيب', nurse:'كادر تمريضي', hospital:'مشفى', admin:'المدير العام'}[user.role];
+  document.getElementById('uName').innerText = user.name;
+  document.getElementById('uInfo').innerText = `${user.email} | ${user.spec} | ${user.work}`;
+  document.getElementById('uVerifyBadge').className = user.verified ? "text-[10px] bg-sky-500 text-white px-2 py-0.5 rounded-full font-bold" : "text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold";
+  document.getElementById('uVerifyBadge').innerHTML = user.verified ? '<i class="fa-solid fa-circle-check"></i> موثق' : '<i class="fa-solid fa-hourglass-half"></i> قيد المراجعة';
+  document.getElementById('pendingAlert').classList.toggle('hidden', user.role==='patient' || user.role==='admin' || user.verified);
+  document.getElementById('fConsult').style.display = user.role==='patient' ? 'block' : 'none';
+  document.getElementById('fNurse').style.display = user.role==='patient' ? 'block' : 'none';
+  document.getElementById('fHosp').style.display = (user.role==='hospital' && user.verified) ? 'block' : 'none';
+  if(!isAdm) tab('consult');
+  renderAll();
+}
+
+function renderAll() {
+  if(user && user.role !== 'patient' && user.role !== 'admin') {
+    const fresh = db.accounts.find(a => a.id === user.id);
+    if(fresh) user = fresh;
+  }
+  const canInteract = (user.role === 'admin') || (user.role !== 'patient' && user.verified);
+
+  document.getElementById('listConsult').innerHTML = db.consults.length ? db.consults.map(c => `
+    <article class="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden text-xs">
+      <div class="p-3.5 pb-2 flex justify-between items-center border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center border"><i class="fa-solid fa-user-secret text-base"></i></div>
+          <div><h5 class="font-extrabold text-slate-800">مستفسر <span class="text-[10px] font-normal bg-slate-100 px-1.5 py-0.5 rounded">هوية مخفية 🔒</span></h5><p class="text-[10px] text-slate-400">${c.time}</p></div>
+        </div>
+        <span class="bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-1 rounded-full font-bold text-[10px]">${c.spec}</span>
+      </div>
+      <div class="p-3.5 text-slate-800 font-semibold">${c.text}</div>
+      <div class="bg-slate-50 p-3 border-t space-y-2">
+        <div class="text-[10px] font-bold text-slate-500"><i class="fa-solid fa-stethoscope text-teal-600"></i> الردود الطبية (${c.replies.length}):</div>
+        ${c.replies.map(r => `<div class="bg-white border-r-4 border-teal-600 p-2.5 rounded-xl"><div class="font-bold text-teal-900">${r.by} <i class="fa-solid fa-circle-check text-sky-500"></i></div><p class="text-slate-700 mt-1">${r.txt}</p></div>`).join('')}
+        ${canInteract ? `<div class="pt-2 flex gap-1.5"><input id="rc-${c.id}" placeholder="اكتب ردك الطبي..." class="flex-1 border rounded-xl p-2 text-xs bg-white"><button onclick="repC(${c.id})" class="bg-teal-600 text-white px-4 rounded-xl font-bold">رد</button></div>` : ''}
+      </div>
+    </article>`).join('') : '<div class="text-center text-xs text-slate-400 py-8 bg-white rounded-2xl border border-dashed">لا توجد بوستات استشارات حالياً</div>';
+
+  document.getElementById('listNurse').innerHTML = db.nursing.length ? db.nursing.map(n => `
+    <div class="border p-3.5 rounded-2xl bg-white shadow-sm text-xs">
+      <div class="flex justify-between items-center font-bold text-sky-800 mb-1"><span>${n.type}</span><span class="text-[10px] ${n.by?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'} px-2 py-0.5 rounded">${n.by||'بانتظار ممرض'}</span></div>
+      <p class="text-slate-700"><b>المراجع:</b> ${n.patient}</p><p class="text-slate-600 mt-0.5"><i class="fa-solid fa-location-dot text-red-500"></i> ${n.addr}</p>
+      ${canInteract?`<p class="text-teal-700 font-bold mt-1">هاتف: ${n.phone}</p>`:''}
+      ${((user.role==='nurse'||user.role==='hospital') && user.verified && !n.by)?`<button onclick="accN(${n.id})" class="mt-2.5 w-full bg-sky-600 text-white py-2 rounded-xl font-bold">قبول واستلام الطلب</button>`:''}
+    </div>`).join('') : '<div class="text-center text-xs text-slate-400 py-8 bg-white rounded-2xl border border-dashed">لا توجد طلبات تمريضية حالياً</div>';
+
+  document.getElementById('listHosp').innerHTML = db.accounts.filter(a => a.role === 'hospital' && a.verified).length ? db.accounts.filter(a => a.role === 'hospital' && a.verified).map(h => `
+    <div class="border p-4 rounded-2xl bg-white shadow-sm text-xs">
+      <div class="flex justify-between items-start"><div><h4 class="font-extrabold text-sm text-slate-800">${h.name} <i class="fa-solid fa-circle-check text-sky-500"></i></h4><p class="text-indigo-600 font-bold">${h.spec}</p></div><a href="https://wa.me/963${h.phone.replace(/^0/,'')}" target="_blank" class="bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-bold"><i class="fa-brands fa-whatsapp"></i> تواصل</a></div>
+      <p class="text-slate-600 mt-2"><i class="fa-solid fa-location-dot text-teal-600"></i> ${h.work}</p>
+      <div class="mt-2 bg-indigo-50 p-2.5 rounded-xl border text-slate-700"><b>الحالة والخدمات:</b> ${h.status}</div>
+    </div>`).join('') : '<div class="text-center text-xs text-slate-400 py-8 bg-white rounded-2xl border border-dashed">لا توجد مشافي موثقة</div>';
+
+  document.getElementById('listDir').innerHTML = db.accounts.filter(a => (a.role === 'doctor' || a.role === 'nurse') && a.verified).length ? db.accounts.filter(a => (a.role === 'doctor' || a.role === 'nurse') && a.verified).map(s => `
+    <div class="border p-3.5 rounded-2xl bg-white shadow-sm text-xs flex justify-between items-center">
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center ${s.role==='doctor'?'bg-teal-50 text-teal-600':'bg-sky-50 text-sky-600'}"><i class="fa-solid ${s.role==='doctor'?'fa-user-doctor':'fa-user-nurse'} text-lg"></i></div><div><h5 class="font-bold text-slate-800">${s.name} <i class="fa-solid fa-circle-check text-sky-500"></i></h5><p class="text-teal-700 font-bold">${s.spec}</p><p class="text-slate-500">${s.work}</p></div></div>
+      <a href="https://wa.me/963${s.phone.replace(/^0/,'')}" target="_blank" class="bg-emerald-500 text-white px-3 py-2 rounded-xl font-bold"><i class="fa-brands fa-whatsapp"></i></a>
+    </div>`).join('') : '<div class="text-center text-xs text-slate-400 py-8 bg-white rounded-2xl border border-dashed">لا يوجد كادر موثق</div>';
+
+  if(user && user.role === 'admin') {
+    document.getElementById('adminPendingList').innerHTML = db.accounts.filter(a => !a.verified).length ? db.accounts.filter(a => !a.verified).map(a => `
+      <div class="border-2 border-amber-300 bg-amber-50 p-3.5 rounded-2xl text-xs space-y-2">
+        <div><span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded text-[10px] font-bold">${a.role}</span><h5 class="font-bold text-slate-800 text-sm mt-1">${a.name}</h5><p class="text-teal-700">${a.spec} - ${a.work}</p><p class="text-slate-600">البريد: ${a.email} | هاتف: ${a.phone}</p></div>
+        ${a.proofImg?`<img src="${a.proofImg}" class="w-full max-h-40 object-contain rounded border bg-white p-1">`:''}
+        <div class="flex gap-2"><button onclick="approveAccount(${a.id})" class="flex-1 bg-emerald-600 text-white font-bold py-2 rounded-xl">توثيق وتفعيل</button><button onclick="deleteAccount(${a.id})" class="bg-red-500 text-white font-bold px-4 py-2 rounded-xl">رفض</button></div>
+      </div>`).join('') : '<div class="text-center text-xs text-slate-400 py-3 bg-white rounded-xl border">لا توجد طلبات توثيق معلقة</div>';
+
+    document.getElementById('adminApprovedList').innerHTML = db.accounts.filter(a => a.verified).length ? db.accounts.filter(a => a.verified).map(a => `
+      <div class="border bg-white p-3 rounded-xl text-xs flex justify-between items-center"><div><h5 class="font-bold text-slate-800">${a.name} <i class="fa-solid fa-circle-check text-sky-500"></i></h5><p class="text-slate-500">${a.email}</p></div><button onclick="deleteAccount(${a.id})" class="bg-red-100 text-red-600 px-3 py-1 rounded font-bold">حذف</button></div>`).join('') : '<div class="text-center text-xs text-slate-400 py-3 bg-white rounded-xl border">لا توجد حسابات موثقة</div>';
+  }
+}
+
+function approveAccount(id) { const a = db.accounts.find(x => x.id === id); if(a) { a.verified = true; pushCloud(); renderAll(); } }
+function deleteAccount(id) { db.accounts = db.accounts.filter(x => x.id !== id); pushCloud(); renderAll(); }
+function addConsult() {
+  const txt = document.getElementById('cText').value.trim();
+  if(!txt) return alert("يرجى كتابة نص الاستشارة");
+  const now = new Date();
+  db.consults.unshift({ id: Date.now(), spec: document.getElementById('cSpec').value, text: txt, time: now.toLocaleDateString('ar-SY') + ' - ' + now.toLocaleTimeString('ar-SY', {hour:'2-digit', minute:'2-digit'}), replies: [] });
+  pushCloud(); document.getElementById('cText').value=''; renderAll();
+}
+function repC(id) {
+  const v = document.getElementById('rc-'+id).value.trim();
+  if(!v) return;
+  const t = db.consults.find(x=>x.id===id);
+  if(t) { t.replies.push({ by: `${user.name} (${user.spec})`, work: user.work, txt: v }); pushCloud(); renderAll(); }
+}
+function addNurse() {
+  const addr = document.getElementById('nAddr').value.trim();
+  if(!addr) return alert("يرجى كتابة العنوان");
+  db.nursing.unshift({ id: Date.now(), patient: user.name, phone: user.phone, type: document.getElementById('nType').value, addr, by: null });
+  pushCloud(); document.getElementById('nAddr').value=''; renderAll();
+}
+function accN(id) { const t = db.nursing.find(x=>x.id===id); if(t) { t.by = `تم الاستلام: ${user.name}`; pushCloud(); renderAll(); } }
+function upHosp() {
+  const st = document.getElementById('hStatus').value.trim();
+  if(!st) return;
+  const h = db.accounts.find(x=>x.id===user.id);
+  if(h) { h.status = st; pushCloud(); document.getElementById('hStatus').value=''; renderAll(); }
+}
+function tab(t) {
+  ['consult','nurse','hosp','dir','admin'].forEach(k => {
+    document.getElementById('sec-'+k).classList.toggle('hidden', k!==t);
+    document.getElementById('t-'+k).className = k===t ? "flex-1 py-3 border-b-2 border-teal-600 text-teal-600 whitespace-nowrap px-2 font-bold" : "flex-1 py-3 border-b-2 border-transparent whitespace-nowrap px-2";
+  });
+}
+function logout() {
+  user = null;
+  localStorage.removeItem('jb_logged_user_id');
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.add('hidden');
+}
+
+syncCloud();
+</script>
+</body>
+</html>
