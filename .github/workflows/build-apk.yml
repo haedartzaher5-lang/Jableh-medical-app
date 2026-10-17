@@ -21,11 +21,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build APK
+      - name: Build APK with Logo
         run: |
           npm install -g cordova
-          cordova create myapp com.jableh.medical JablehMedical
+          cordova create myapp com.jableh.medical "تطبيق جبلة الطبي"
           cp -f index.html myapp/www/index.html
+          if [ -f logo.png ]; then
+            cp -f logo.png myapp/logo.png
+            sed -i 's|</widget>|  <icon src="logo.png" />\n</widget>|' myapp/config.xml
+          fi
           cd myapp
           cordova platform add android@13.0.0
           cordova build android --debug
