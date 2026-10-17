@@ -21,21 +21,33 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build APK with Logo
+      - name: Build APK with Custom Logo
         run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
           npm install -g cordova
           cordova create myapp com.jableh.medical "تطبيق جبلة الطبي"
           cp -f index.html myapp/www/index.html
-          if [ -f logo.png ]; then
-            cp -f logo.png myapp/logo.png
-            sed -i 's|</widget>|  <icon src="logo.png" />\n</widget>|' myapp/config.xml
-          fi
           cd myapp
           cordova platform add android@13.0.0
+          
+          LOGO_FILE=$(find .. -maxdepth 1 -iname "logo.*" | head -n 1)
+          if [ -n "$LOGO_FILE" ]; then
+            echo "Found logo: $LOGO_FILE"
+            rm -rf platforms/android/app/build/intermediates/res
+            rm -rf platforms/android/app/src/main/res/mipmap-anydpi-v26
+            for dir in platforms/android/app/src/main/res/mipmap-*; do
+              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher.png"
+              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher_round.png"
+              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher_foreground.png"
+            done
+          fi
+          
           cordova build android --debug
+          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk ../Jableh-Medical.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Jableh-Medical-APK
-          path: myapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: Jableh-Medical.apk
+          
