@@ -21,7 +21,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build APK with Custom Logo
+      - name: Build APK Clean Logo
         run: |
           sudo apt-get update && sudo apt-get install -y imagemagick
           npm install -g cordova
@@ -30,16 +30,14 @@ jobs:
           cd myapp
           cordova platform add android@13.0.0
           
+          # مسح مجلد الأيقونات الافتراضية بالكامل لمنع أي تعارض أو تكرار
+          rm -rf platforms/android/app/src/main/res/mipmap-*
+          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
+          
           LOGO_FILE=$(find .. -maxdepth 1 -iname "logo.*" | head -n 1)
           if [ -n "$LOGO_FILE" ]; then
-            echo "Found logo: $LOGO_FILE"
-            rm -rf platforms/android/app/build/intermediates/res
-            rm -rf platforms/android/app/src/main/res/mipmap-anydpi-v26
-            for dir in platforms/android/app/src/main/res/mipmap-*; do
-              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher.png"
-              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher_round.png"
-              convert "$LOGO_FILE" -resize 512x512 "$dir/ic_launcher_foreground.png"
-            done
+            convert "$LOGO_FILE" -resize 192x192 platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert "$LOGO_FILE" -resize 192x192 platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
           fi
           
           cordova build android --debug
@@ -50,5 +48,3 @@ jobs:
         with:
           name: Jableh-Medical-APK
           path: Jableh-Medical.apk
-
-    
